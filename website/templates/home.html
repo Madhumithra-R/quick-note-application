@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - QuickNotes{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header & Welcome Message -->
+    <section class="dashboard-header">
+        <div class="welcome-box">
+            <h1 class="welcome-title">Welcome back, <span class="highlight-user">{{ current_user.username }}</span>! 👋</h1>
+            <p class="welcome-subtitle">Capture your ideas, manage personal tasks, and keep thoughts organized securely.</p>
+        </div>
+        <div class="dashboard-stats">
+            <div class="stat-pill">
+                <span class="stat-count" id="totalNotesCount">{{ notes|length }}</span>
+                <span class="stat-label">Total Notes</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Create Note Card -->
+    <section class="create-note-section">
+        <div class="card note-creator-card">
+            <div class="card-header">
+                <h2 class="card-title">✏️ Create a New Note</h2>
+                <span class="char-count" id="charCounter">0 / 5000</span>
+            </div>
+            <form method="POST" action="{{ url_for('views.home') }}" class="note-form" id="createNoteForm">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.content(
+                        class="form-textarea",
+                        id="noteContentInput",
+                        placeholder="Type your note here... (supports paragraphs, bullet points, checklists)",
+                        rows="4",
+                        required=true
+                    ) }}
+                    {% for error in form.content.errors %}
+                        <span class="field-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="clearNoteBtn">Clear</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span>Save Note</span>
+                        <span class="btn-icon">💾</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Notes List Section -->
+    <section class="notes-display-section">
+        <div class="section-toolbar">
+            <div class="toolbar-title-box">
+                <h2 class="section-title">Your Notes</h2>
+                <span class="badge-count" id="visibleNotesCount">{{ notes|length }}</span>
+            </div>
+
+            <!-- Search Notes Input -->
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input
+                    type="text"
+                    id="noteSearchInput"
+                    class="search-input"
+                    placeholder="Search notes in real-time..."
+                    value="{{ search_query }}"
+                    autocomplete="off"
+                >
+                <button type="button" class="search-clear-btn" id="clearSearchBtn" title="Clear search">&times;</button>
+            </div>
+        </div>
+
+        <!-- Notes Grid -->
+        <div class="notes-grid" id="notesGrid">
+            {% if notes %}
+                {% for note in notes %}
+                    <article class="note-card" id="note-card-{{ note.id }}" data-note-id="{{ note.id }}">
+                        <div class="note-card-body">
+                            <p class="note-text" id="note-content-{{ note.id }}">{{ note.content }}</p>
+                        </div>
+                        <div class="note-card-footer">
+                            <div class="note-meta">
+                                <span class="note-date" title="Created on">
+                                    📅 {{ note.created_at.strftime('%b %d, %Y - %I:%M %p') }}
+                                </span>
+                                {% if note.updated_at and note.updated_at != note.created_at %}
+                                    <span class="note-edited-tag" title="Last modified">
+                                        (edited)
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="note-actions">
+                                <button
+                                    type="button"
+                                    class="action-btn edit-btn"
+                                    title="Edit Note"
+                                    onclick="openEditModal({{ note.id }})"
+                                >
+                                    ✏️ Edit
+                                </button>
+                                <button
+                                    type="button"
+                                    class="action-btn delete-btn"
+                                    title="Delete Note"
+                                    onclick="confirmDeleteNote({{ note.id }})"
+                                >
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📝</div>
+                    <h3 class="empty-title">No notes yet</h3>
+                    <p class="empty-desc">Create your very first note using the box above to get started!</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Dynamic No Search Results Box -->
+        <div class="empty-state no-results-state" id="noSearchResults" style="display: none;">
+            <div class="empty-icon">🔍</div>
+            <h3 class="empty-title">No matching notes found</h3>
+            <p class="empty-desc">Try searching with a different keyword or clear the search filter.</p>
+        </div>
+    </section>
+</div>
+
+<!-- Edit Note Modal Dialog -->
+<div class="modal-overlay" id="editModal" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-labelledby="editModalTitle">
+        <div class="modal-header">
+            <h3 class="modal-title" id="editModalTitle">✏️ Edit Note</h3>
+            <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Close modal">&times;</button>
+        </div>
+        <form id="editNoteForm" onsubmit="handleEditSubmit(event)">
+            <input type="hidden" id="editNoteId" name="note_id">
+            <div class="modal-body">
+                <div class="form-group">
+                    <textarea
+                        id="editNoteTextarea"
+                        name="content"
+                        class="form-textarea modal-textarea"
+                        rows="6"
+                        required
+                    ></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveEditBtn">
+                    <span>Save Changes</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal Dialog -->
+<div class="modal-overlay" id="deleteModal" aria-hidden="true">
+    <div class="modal-dialog modal-confirm" role="dialog" aria-labelledby="deleteModalTitle">
+        <div class="modal-header">
+            <h3 class="modal-title" id="deleteModalTitle">🗑️ Confirm Deletion</h3>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="confirm-message">Are you sure you want to delete this note? This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeDeleteModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="executeDeleteNote()">
+                <span>Delete Permanently</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

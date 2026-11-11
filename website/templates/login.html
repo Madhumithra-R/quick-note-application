@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - QuickNotes{% endblock %}
+
+{% block content %}
+<div class="auth-page-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon-badge">🔒</div>
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Sign in to access your private notes securely.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                {{ form.email(class="form-input", id="email", placeholder="you@example.com", autocomplete="email", required=true) }}
+                {% for error in form.email.errors %}
+                    <span class="field-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                {{ form.password(class="form-input", id="password", placeholder="••••••••", autocomplete="current-password", required=true) }}
+                {% for error in form.password.errors %}
+                    <span class="field-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="auth-security-notice">
+                <span class="security-lock-icon">🛡️</span>
+                <span>Protected by 3-attempt account lockout &amp; rate limiting.</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <span>Sign In</span>
+                <span class="btn-arrow">&rarr;</span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{{ url_for('auth.sign_up') }}" class="auth-link">Create one now</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
