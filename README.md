@@ -1,54 +1,57 @@
-# Internship Task 1: Secure Flask Quick Note Application
+# 📝 QuickNotes — Secure Flask Notes Application
 
-A secure, single-page-style personal notes web application built with **Python** and **Flask**. This project enhances foundational Flask architecture concepts with robust enterprise-grade security practices, modern UI design, and multi-tenant data isolation.
-
----
-
-## 1. Project Overview
-
-QuickNotes provides a clean, responsive web interface where authenticated users can write, view, edit, search, and delete personal notes in real time. All notes are saved to an underlying SQLite database via SQLAlchemy ORM and isolated strictly to the creating user.
-
-### Key Highlights
-- **Single-Page Application (SPA) Experience**: Interactive note creation, in-place modal editing, deletion confirmation, and real-time live search without page reloads.
-- **Strict Data Isolation**: Users can only access and manage their own notes. Any cross-tenant access attempts are rejected with `403 Forbidden`.
-- **Modern UI**: Polished purple-and-white theme built purely with semantic HTML5, modern CSS3 (Flexbox/Grid), and vanilla JavaScript.
-- **Security-First Architecture**: Implements CSRF tokens on all requests, PBKDF2-SHA256 hashing, rate limiting, 3-attempt account lockout, and 20-minute inactivity session expiry.
+> **Internship Assignment — Task 1: Secure Web Application**  
+> A lightweight, secure, and modern single-page-style personal notes manager built with Python and Flask.
 
 ---
 
-## 2. Technology Stack
+## 📌 Project Overview
 
-In strict accordance with the internship assignment requirements, **only** standard, lightweight technologies were used:
+**QuickNotes** is a secure notes web application designed to demonstrate the complete HTTP request-response lifecycle, user session management, database persistence, and multi-tenant data isolation. Authenticated users can write, view, edit, search, and delete personal notes in real-time within an intuitive, responsive dashboard.
 
-- **Backend**: Python 3.12+, Flask 3.0+
-- **Database**: SQLite (via Flask-SQLAlchemy ORM)
-- **Authentication**: Flask-Login, Werkzeug Security
-- **Security & Forms**: Flask-WTF (CSRF Protection), Flask-Limiter (Rate Limiting)
-- **Templating**: Jinja2 (Automatic XSS Escaping)
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript (No React, Node.js, external JS frameworks, or third-party CSS libraries)
+### 🌟 Key Features
+- **Single-Page Application (SPA) Experience**: Interactive note creation, modal-based editing, deletion confirmation, and real-time live search without page reloads.
+- **Strict Data Privacy**: Users can access and manage only their own notes. Any attempt to access another user's note returns `403 Forbidden`.
+- **Modern UI**: Clean purple-and-white theme built with semantic HTML5, responsive CSS3, and vanilla JavaScript.
+- **Enterprise-Grade Security**: Protection against CSRF, SQL Injection, XSS, brute-force attacks, and session hijacking.
 
 ---
 
-## 3. Security Implementation Details
+## 🛠️ Technology Stack
 
-| Security Feature | Implementation Mechanism |
+Built strictly using standard, lightweight technologies without extra unnecessary frameworks:
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Backend** | Python 3.12+ / Flask 3.0 | Application core & routing |
+| **Database** | SQLite + Flask-SQLAlchemy | Relational database ORM |
+| **Authentication** | Flask-Login + Werkzeug | User authentication & password hashing |
+| **Security** | Flask-WTF + Flask-Limiter | CSRF token protection & rate limiting |
+| **Templating** | Jinja2 | Dynamic HTML rendering with auto-escaping (XSS defense) |
+| **Frontend** | HTML5, CSS3, JavaScript | Responsive purple-and-white UI (No React/Node.js) |
+| **Production WSGI** | Gunicorn | Production-ready HTTP WSGI server for cloud deployment |
+
+---
+
+## 🔐 Security Features
+
+| Security Feature | Implementation Details |
 | :--- | :--- |
-| **CSRF Protection** | Enforced across all forms via `Flask-WTF` (`CSRFProtect`). JavaScript AJAX requests include dynamic `X-CSRFToken` headers. |
 | **Password Hashing** | Uses PBKDF2-SHA256 (`generate_password_hash(password, method='pbkdf2:sha256')`). |
-| **Password Policy** | Enforces minimum 8 characters, at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (`[!@#$%^&*...]`). |
-| **Account Lockout** | After **3 consecutive failed login attempts**, the account is locked for **5 minutes**. Valid logins reset failed attempts to 0. |
-| **Session Inactivity Timeout** | Session lifetime is configured to **20 minutes** (`PERMANENT_SESSION_LIFETIME = timedelta(minutes=20)`). Sessions are marked permanent and refreshed on active requests. |
-| **Session Cookie Hardening** | `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`. |
-| **Rate Limiting** | Configured via `Flask-Limiter` with an in-memory backend. Global limit (`200/day`, `50/hour`) and strict route limit (`5/minute`) on `/login` and `/sign-up`. |
-| **SQL Injection Prevention** | All database interactions utilize SQLAlchemy ORM parameterized queries. Raw unescaped SQL strings are avoided. |
-| **XSS Protection** | Jinja2 autoescaping is active on all templates; user content is treated strictly as plain text. |
-| **Input Validation** | Form-level validation with WTForms (`DataRequired`, `Email`, `Length`, regex checks) and content trimming. |
+| **Password Policy** | Minimum 8 characters, at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special symbol (`!@#$%^&*...`). |
+| **Account Lockout** | Automatically locks the account for **5 minutes** after **3 consecutive failed login attempts**. |
+| **CSRF Protection** | CSRF tokens enforced on all standard forms and AJAX JSON requests (`X-CSRFToken` header). |
+| **Session Inactivity Timeout** | Sessions expire automatically after **20 minutes of inactivity** (`PERMANENT_SESSION_LIFETIME = timedelta(minutes=20)`). |
+| **Cookie Hardening** | `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`. |
+| **Rate Limiting** | Rate-limited via Flask-Limiter: `5 per minute` on sensitive authentication endpoints (`/login`, `/sign-up`). |
+| **SQL Injection Defense** | All database transactions use SQLAlchemy ORM parameterized queries. |
+| **XSS Prevention** | Jinja2 auto-escapes user input by default to neutralize malicious `<script>` payloads. |
 
 ---
 
-## 4. Database Schema
+## 🗄️ Database Architecture
 
-SQLite database (`database.db`) consists of two relational tables:
+The application uses an SQLite database with two relational tables:
 
 ```
 +------------------------------------+          +------------------------------------+
@@ -63,93 +66,120 @@ SQLite database (`database.db`) consists of two relational tables:
 +------------------------------------+
 ```
 
-- **User**: Implements `UserMixin` for Flask-Login compatibility.
-- **Relationship**: `users.notes` has a one-to-many relationship with cascade deletion (`cascade='all, delete-orphan'`).
+- Each user has a `1-to-many` relationship with `notes`.
+- Deleting a user cascades and removes all associated notes (`cascade='all, delete-orphan'`).
 
 ---
 
-## 5. Project Directory Structure
+## 📁 Project Structure
 
 ```
-Quick note application/
+quick-note-application/
 │
-├── main.py                    # Application entry point
-├── requirements.txt           # Project dependencies
-├── test_app.py                # Automated test suite (7 comprehensive test cases)
-├── README.md                  # Complete documentation
+├── main.py                     # Application entry point
+├── Procfile                    # Cloud deployment process file (Gunicorn)
+├── requirements.txt            # Python dependencies
+├── test_app.py                 # Automated test suite (7 comprehensive test cases)
+├── README.md                   # Project documentation
 │
 └── website/
-    ├── __init__.py            # App factory, configuration, extensions & error handlers
-    ├── auth.py                # Registration, login, lockout logic, logout
-    ├── views.py               # Notes dashboard, CRUD routes, authorization checks
-    ├── models.py              # User and Note SQLAlchemy models
-    ├── forms.py               # WTForms definitions & password policy validators
+    ├── __init__.py             # App factory, extensions, and error handlers
+    ├── auth.py                 # Authentication, lockout logic, and session control
+    ├── views.py                # Notes dashboard, CRUD endpoints, and access checks
+    ├── models.py               # User and Note SQLAlchemy models
+    ├── forms.py                # WTForms definitions & password validation rules
     │
     ├── templates/
-    │   ├── base.html          # Base layout, navbar, CSRF meta, flash messages
-    │   ├── home.html          # Notes dashboard, search bar, creation box, modals
-    │   ├── login.html         # Login page with lockout notice
-    │   └── sign_up.html       # Sign-up page with dynamic rule validation hints
+    │   ├── base.html           # Base layout, navbar, CSRF meta, alert messages
+    │   ├── home.html           # Notes dashboard, search bar, creation card, modals
+    │   ├── login.html          # Sign-in page with lockout warnings
+    │   └── sign_up.html        # Sign-up page with real-time rule checklist
     │
     └── static/
-        ├── style.css          # Modern purple-and-white theme & responsive styles
-        └── script.js          # SPA interactions: search, character counter, AJAX modals
+        ├── style.css           # Modern purple-and-white responsive styling
+        └── script.js           # Live search, char counter, and AJAX modal operations
 ```
 
 ---
 
-## 6. Installation & Execution Guide
+## 🚀 Getting Started (Local Setup)
 
-Follow these steps in Windows PowerShell:
+### Prerequisites
+- Python 3.10 or higher installed on your computer.
 
-### Step 1: Create Virtual Environment
-```powershell
-python -m venv ca2
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Madhumithra-R/quick-note-application.git
+cd quick-note-application
 ```
 
-### Step 2: Activate the Virtual Environment
+### 2. Create and Activate Virtual Environment
+
+**On Windows (PowerShell):**
 ```powershell
+python -m venv ca2
 .\ca2\Scripts\Activate.ps1
 ```
 
-### Step 3: Install Required Dependencies
-```powershell
+**On macOS/Linux:**
+```bash
+python3 -m venv ca2
+source ca2/bin/activate
+```
+
+### 3. Install Dependencies
+```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Run the Application
-```powershell
+### 4. Run the Application
+```bash
 python main.py
 ```
 
-### Step 5: Access the Application
-Open your web browser and navigate to:
-```
-http://127.0.0.1:5000
-```
+Open your browser and navigate to:
+👉 **`http://127.0.0.1:5000`**
 
 ---
 
-## 7. Running the Automated Test Suite
+## 🧪 Testing Guide
 
-To verify all security requirements, authentication flows, and data isolation:
+### Automated Test Suite
+The project includes a comprehensive test suite in `test_app.py` that verifies all security and functional requirements.
 
+To run the automated tests:
 ```powershell
-.\ca2\Scripts\python.exe test_app.py
+python test_app.py
 ```
 
-### Automated Test Coverage:
-1. **User Registration**: Enforces email validation, duplicate prevention, and password complexity.
+#### Test Coverage:
+1. **User Registration**: Enforces email validation, duplicate prevention, and password rules.
 2. **Password Hashing**: Confirms `pbkdf2:sha256` hashing algorithm.
-3. **Login & Lockout**: Verifies 3 failed attempts lock account for 5 minutes, and subsequent unlock.
-4. **Notes CRUD**: Validates note creation, editing, deletion, and ordering (newest first).
-5. **Cross-User Isolation**: Confirms User B cannot view, edit, or delete User A's notes (403 Forbidden).
-6. **SQL Injection & XSS Protection**: Verifies SQL injection resistance and Jinja2 HTML escaping.
-7. **CSRF & Rate Limiting**: Validates CSRF token enforcement and HTTP 429 response on rate exhaustion.
+3. **Login & Lockout**: Verifies 3 failed attempts trigger a 5-minute lockout and unlock correctly.
+4. **Notes CRUD**: Validates note creation, editing, deletion, and chronological ordering.
+5. **Cross-User Isolation**: Verifies User B cannot view, edit, or delete User A's notes (returns `403 Forbidden`).
+6. **SQLi & XSS Protection**: Tests SQL injection immunity and Jinja2 script escaping.
+7. **CSRF & Rate Limiting**: Tests CSRF token requirements and `429 Too Many Requests` responses.
 
 ---
 
-## 8. Acknowledgments
+## ☁️ Cloud Deployment (Render)
 
-- **Inspiration**: Concept and architectural inspiration adapted from the open-source tutorial by **Tech With Tim** ([Flask Web App Tutorial](https://github.com/techwithtim/Flask-Web-App-Tutorial)).
-- **Customization**: Engineered as a specialized, secure internal application for **Internship Task 1**, with comprehensive enhancements including custom WTForms validation, account lockout protection, rate limiting, and an upgraded SPA-style user interface.
+This application is ready for cloud deployment on **Render**:
+
+1. Log in to [render.com](https://render.com) using your GitHub account.
+2. Click **New +** &rarr; **Web Service**.
+3. Connect your repository: `Madhumithra-R/quick-note-application`.
+4. Configure service settings:
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn main:app`
+   - **Instance Type**: `Free`
+5. Click **Deploy Web Service**.
+
+---
+
+## 📜 Acknowledgments
+
+- Architectural foundation inspired by the open-source Flask tutorial by **Tech With Tim**.
+- Custom-built and enhanced with enterprise security features for **Internship Task 1**.
